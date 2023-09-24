@@ -63,6 +63,19 @@ export async function checkCredentials(): Promise<void> {
   }
 }
 
+export async function getCredentials(): Promise<{ username: string; password: string }> {
+  const { username, password } = await chrome.storage.local.get()
+
+  if (!username || !password) {
+    throw new Error('Invalid getCredentials function call as credentials should be defined')
+  }
+
+  const newPassword = await decryptHashedWord(password)
+  const newUsername = await decryptHashedWord(username)
+
+  return { username: newUsername, password: newPassword }
+}
+
 export async function setIsScriptRunner() {
   await chrome.storage.session.set({ isScriptRunner: true })
 }
@@ -80,4 +93,74 @@ export async function setCrendentialsError() {
 
   // after setting a credentials error the error can
   // only be removed when credentials are changed in options page
+}
+
+async function getCryptoKey() {
+  const algorithm = { name: 'AES-GCM', length: 256 }
+  const key = await crypto.subtle.generateKey(algorithm, true, ['encrypt', 'decrypt'])
+
+  return key
+}
+
+export async function encryptWord(word: string, iv: Uint8Array) {
+  const plaintext = new TextEncoder().encode(word)
+
+  const encryptedData = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    await getCryptoKey(),
+    plaintext,
+  )
+
+  return encryptedData
+}
+
+export async function decryptWord(encryptedData: ArrayBuffer, iv: Uint8Array) {
+  try {
+    console.log(encryptedData)
+
+    const decryptedData = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      await getCryptoKey(),
+      encryptedData,
+    )
+    console.log(decryptedData)
+
+    const decryptedText = new TextDecoder().decode(decryptedData)
+
+    return decryptedText
+  } catch (error) {
+    console.error('Error decrypting data:', error)
+    throw error // Rethrow the error to handle it in the calling code.
+  }
+}
+
+export async function generateHashedWord(word: string) {
+  const { hash } = await chrome.storage.local.get()
+
+  const iv = new Uint8Array(JSON.parse(hash))
+
+  const encryptedResult = await encryptWord(word, iv)
+
+  // Return an object containing the IV and encrypted data
+  return encryptedResult
+}
+
+export async function decryptHashedWord(data: ArrayBuffer) {
+  const { hash } = await chrome.storage.local.get()
+
+  const iv = new Uint8Array(JSON.parse(hash))
+
+  return await decryptWord(data, iv)
+}
+
+export function stringifyArrayBuffer(b: ArrayBuffer) {
+  const arrayBufferView = new Uint8Array(b)
+  const str = JSON.stringify(Array.from(arrayBufferView))
+  return str
+}
+
+export function parseArrayBuffer(str: string): ArrayBuffer {
+  const array = JSON.parse(str)
+  const uint8Array = new Uint8Array(array)
+  return uint8Array.buffer
 }

@@ -1,6 +1,6 @@
 {
   "name": "mbnconnexionextension",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "yatsu",
   "description": "",
   "type": "module",
@@ -20,11 +20,18 @@
     "preview": "vite preview",
     "fmt": "prettier --write '**/*.{svelte,ts,json,css,scss,md}'"
   },
-  "dependencies": { "svelte-forms-lib": "^2.0.1" },
+  "dependencies": {
+    "bun": "^1.0.3",
+    "crypto-js": "^4.1.1",
+    "svelte-forms-lib": "^2.0.1"
+  },
   "devDependencies": {
     "@crxjs/vite-plugin": "^1.0.12",
-    "@types/chrome": "^0.0.236",
     "@sveltejs/vite-plugin-svelte": "1.0.0-next.49",
+    "@types/bcryptjs": "^2.4.4",
+    "@types/chrome": "^0.0.236",
+    "@types/crypto-js": "^4.1.2",
+    "@types/node": "^20.6.4",
     "prettier": "^2.7.1",
     "prettier-plugin-svelte": "^2.7.0",
     "svelte": "^3.44.0",

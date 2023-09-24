@@ -1,9 +1,9 @@
-import { clearScriptRunner, IsScriptRunner, setCrendentialsError } from '../utils'
+import { clearScriptRunner, getCredentials, IsScriptRunner, setCrendentialsError } from '../utils'
 
 chrome.runtime.onMessage.addListener((msg, messageSender, sendReply) => {
   if (msg.action === 'requestCredentials') {
     ;(async () => {
-      const { username, password } = await chrome.storage.local.get()
+      const { username, password } = await getCredentials()
       // username and password defined for sure
 
       sendReply({ username, password })
@@ -50,4 +50,12 @@ chrome.runtime.onMessage.addListener((msg, messageSender, sendReply) => {
   }
 })
 
+chrome.runtime.onInstalled.addListener(() => {
+  ;(async () => {
+    const iv = crypto.getRandomValues(new Uint8Array(12)) // IV for AES-GCM
+
+    const hash = JSON.stringify(Array.from(iv))
+    await chrome.storage.local.set({ hash })
+  })()
+})
 export {}

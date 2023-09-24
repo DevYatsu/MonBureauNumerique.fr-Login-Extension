@@ -3,6 +3,12 @@
   import CheckBox from '../components/CheckBox.svelte'
   import Card from '../components/Card.svelte'
   import Backbutton from '../components/Backbutton.svelte'
+  import {
+    decryptHashedWord,
+    generateHashedWord,
+    parseArrayBuffer,
+    stringifyArrayBuffer,
+  } from '../utils'
 
   let isSubmitted = false
   let initialValues = {
@@ -14,7 +20,16 @@
   const { form, errors, handleChange, handleSubmit } = createForm({
     initialValues,
     onSubmit: async (values) => {
-      await chrome.storage.local.set(values)
+      const hashedUsername = await generateHashedWord(values.username)
+      const hashedPasssword = await generateHashedWord(values.password)
+
+      const newValues = {
+        username: stringifyArrayBuffer(hashedUsername),
+        password: stringifyArrayBuffer(hashedPasssword),
+        goToFirstSchoolAutomatically: !!values.goToFirstSchoolAutomatically,
+      }
+
+      await chrome.storage.local.set(newValues)
       await chrome.storage.local.remove('credentialsError')
 
       isSubmitted = true
@@ -30,12 +45,30 @@
       return errs
     },
   })
+  ;(async () => {
+    try {
+      const { username, password, goToFirstSchoolAutomatically } = await chrome.storage.local.get()
 
-  chrome.storage.local.get(['username', 'password', 'goToFirstSchoolAutomatically'], (data) => {
-    $form.username = data.username
-    $form.password = data.password
-    $form.goToFirstSchoolAutomatically = data.goToFirstSchoolAutomatically
-  })
+      console.log(await decryptHashedWord(parseArrayBuffer(username)))
+      if (username) {
+        const decryptedUsername = await decryptHashedWord(parseArrayBuffer(username)).catch(
+          (error) => console.error('Error decrypting username:', error),
+        )
+        $form.username = decryptedUsername
+      }
+
+      if (password) {
+        const decryptedPassword = await decryptHashedWord(parseArrayBuffer(password)).catch(
+          (error) => console.error('Error decrypting password:', error),
+        )
+        $form.password = decryptedPassword
+      }
+
+      $form.goToFirstSchoolAutomatically = goToFirstSchoolAutomatically
+    } catch (error) {
+      console.error('Error retrieving data from storage:', error)
+    }
+  })()
 </script>
 
 <main>
